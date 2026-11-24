@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>机器人维护台</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="core.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">跳到维护工作区</a>
+  <div class="layout">
+    <aside class="sidebar" aria-labelledby="sidebar-title">
+      <header class="brand">
+        <span class="brand-icon" aria-hidden="true"></span>
+        <div>
+          <p class="brand-name" id="sidebar-title">机器人维护台</p>
+          <p class="brand-caption">本地试用</p>
+        </div>
+      </header>
+
+      <section class="fleet" aria-labelledby="fleet-title">
+        <div class="fleet-heading">
+          <h2 id="fleet-title">设备</h2>
+          <button class="button button-sidebar" type="button" id="select-add-device" aria-haspopup="dialog">
+            <span aria-hidden="true">＋</span> 添加设备
+          </button>
+        </div>
+        <div id="device-list" class="device-list"></div>
+      </section>
+
+      <section class="backup" aria-labelledby="backup-title">
+        <h2 id="backup-title">数据备份</h2>
+        <div class="backup-actions">
+          <button class="button button-sidebar" type="button" id="export-data">导出数据</button>
+          <button class="button button-sidebar" type="button" id="import-data">导入数据</button>
+          <input class="visually-hidden" type="file" id="import-file" accept=".json,application/json" hidden>
+        </div>
+      </section>
+    </aside>
+
+    <main class="workspace" id="workspace" tabindex="-1">
+      <header class="workspace-heading">
+        <h1>维护工作区</h1>
+        <button class="button button-secondary" type="button" id="open-document" aria-haspopup="dialog">
+          <span aria-hidden="true">＋</span> 添加资料
+        </button>
+      </header>
+      <div class="message" id="message" role="status" aria-live="polite" aria-atomic="true"></div>
+
+      <div class="workspace-columns">
+        <div class="column">
+          <section class="panel" aria-labelledby="current-title">
+            <h2 class="panel-title" id="current-title">当前配置</h2>
+            <div id="current-device"></div>
+          </section>
+          <section class="panel" aria-labelledby="triage-title">
+            <h2 class="panel-title" id="triage-title">报修与工单</h2>
+            <form class="form-stack" id="triage-form">
+              <div class="field">
+                <label for="description">故障现象</label>
+                <textarea id="description" name="description" rows="4" placeholder="记录观察到的现象、发生时间和已做的检查" required></textarea>
+              </div>
+              <div class="cluster form-actions">
+                <button class="button button-primary" type="submit">生成工单草稿</button>
+              </div>
+            </form>
+            <div id="draft-panel"></div>
+          </section>
+        </div>
+        <div class="column">
+          <section class="panel" aria-labelledby="evidence-title">
+            <h2 class="panel-title" id="evidence-title">适用资料</h2>
+            <div id="evidence-panel"></div>
+          </section>
+          <section class="panel" aria-labelledby="history-title">
+            <h2 class="panel-title" id="history-title">维修与复测记录</h2>
+            <div id="history-panel"></div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <dialog class="dialog" id="device-dialog" aria-labelledby="device-dialog-title">
+    <form class="dialog-form" id="device-form">
+      <header class="dialog-heading">
+        <h2 id="device-dialog-title">添加设备</h2>
+      </header>
+      <div class="dialog-body form-stack">
+        <div class="field">
+          <label for="device-name">设备名称</label>
+          <input id="device-name" name="name" autocomplete="off" required autofocus>
+        </div>
+        <div class="field">
+          <label for="device-model">设备型号</label>
+          <input id="device-model" name="model" autocomplete="off" required>
+        </div>
+        <div class="field">
+          <label for="device-component">当前关键部件</label>
+          <input id="device-component" name="keyComponent" autocomplete="off" required>
+        </div>
+        <div class="field">
+          <label for="device-version">当前配置版本</label>
+          <input id="device-version" name="version" autocomplete="off" placeholder="留空表示待确认">
+        </div>
+      </div>
+      <footer class="dialog-actions">
+        <button type="button" class="button button-quiet" data-close-dialog>取消</button>
+        <button type="submit" class="button button-primary">保存设备</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="document-dialog" aria-labelledby="document-dialog-title">
+    <form class="dialog-form" id="document-form">
+      <header class="dialog-heading">
+        <h2 id="document-dialog-title">添加资料</h2>
+      </header>
+      <div class="dialog-body form-stack">
+        <div class="field">
+          <label for="document-title">资料名称</label>
+          <input id="document-title" name="title" autocomplete="off" required autofocus>
+        </div>
+        <div class="field">
+          <label for="document-model">适用设备型号</label>
+          <input id="document-model" name="model" autocomplete="off" required>
+        </div>
+        <div class="field">
+          <label for="document-component">适用部件</label>
+          <input id="document-component" name="keyComponent" autocomplete="off" required>
+        </div>
+        <div class="field">
+          <label for="document-version">适用配置版本</label>
+          <input id="document-version" name="version" autocomplete="off">
+          <label class="checkbox" for="document-all-versions">
+            <input id="document-all-versions" name="allVersions" type="checkbox"> 适用该部件的所有版本
+          </label>
+        </div>
+        <div class="field">
+          <label for="document-locator">出处</label>
+          <input id="document-locator" name="locator" autocomplete="off" placeholder="例如手册页码、章节名或记录编号" required>
+        </div>
+        <div class="field">
+          <label for="document-excerpt">资料摘录</label>
+          <textarea id="document-excerpt" name="excerpt" rows="4" required></textarea>
+        </div>
+      </div>
+      <footer class="dialog-actions">
+        <button type="button" class="button button-quiet" data-close-dialog>取消</button>
+        <button type="submit" class="button button-primary">保存资料</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="version-dialog" aria-labelledby="version-dialog-title">
+    <form class="dialog-form" id="version-form">
+      <header class="dialog-heading">
+        <h2 id="version-dialog-title">更新配置版本</h2>
+      </header>
+      <div class="dialog-body form-stack">
+        <div class="field">
+          <label for="new-version">新配置版本</label>
+          <input id="new-version" name="version" autocomplete="off" placeholder="留空表示待确认" autofocus>
+        </div>
+      </div>
+      <footer class="dialog-actions">
+        <button type="button" class="button button-quiet" data-close-dialog>取消</button>
+        <button type="submit" class="button button-primary">保存版本</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="retest-dialog" aria-labelledby="retest-dialog-title">
+    <form class="dialog-form" id="retest-form">
+      <header class="dialog-heading">
+        <h2 id="retest-dialog-title">记录复测</h2>
+      </header>
+      <div class="dialog-body form-stack">
+        <div class="field">
+          <label for="retest-result">复测记录</label>
+          <textarea id="retest-result" name="result" rows="4" placeholder="记录复测方式和观察结果" required autofocus></textarea>
+        </div>
+        <div class="field">
+          <label for="retest-passed">复测结论</label>
+          <select id="retest-passed" name="passed" required>
+            <option value="no">未通过</option>
+            <option value="yes">通过</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="checkbox" for="retest-close">
+            <input id="retest-close" name="close" type="checkbox"> 复测通过后关闭工单
+          </label>
+        </div>
+      </div>
+      <footer class="dialog-actions">
+        <button type="button" class="button button-quiet" data-close-dialog>取消</button>
+        <button type="submit" class="button button-primary">保存复测结果</button>
+      </footer>
+    </form>
+  </dialog>
+</body>
+</html>
